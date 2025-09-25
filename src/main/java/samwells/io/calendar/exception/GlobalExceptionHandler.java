@@ -10,9 +10,19 @@ import samwells.io.calendar.dto.ErrorDto;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorDto> handleNotFound(NotFoundException ex) {
+        return new ResponseEntity<>(new ErrorDto(ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(InvalidDateTimeFormat.class)
     public ResponseEntity<ErrorDto> handleInvalidDateTimeFormat(InvalidDateTimeFormat ex) {
         return new ResponseEntity<>(new ErrorDto(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorDto> handleInvalidDateTimeFormat(UnauthorizedException ex) {
+        return new ResponseEntity<>(new ErrorDto(ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(Exception.class)

@@ -34,4 +34,9 @@ public class EventsController {
     List<EventDto> getEvents() {
         return eventService.getEvents().stream().map(EventDto::new).toList();
     }
+
+    @GetMapping("/{id}")
+    EventDto getEvent(@PathVariable Long id) {
+        return new EventDto(eventService.getEvent(id));
+    }
 }

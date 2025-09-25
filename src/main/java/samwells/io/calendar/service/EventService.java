@@ -15,4 +15,5 @@ public interface EventService {
             Set<Long> participants
     );
     List<Event> getEvents();
+    Event getEvent(Long eventId);
 }
