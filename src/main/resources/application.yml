@@ -4,5 +4,5 @@ spring:
 
   datasource:
     url: jdbc:h2:mem:calendardb
-    username: calendar_user
-    password: calendar_password
+#    username: calendar_user
+#    password: calendar_password

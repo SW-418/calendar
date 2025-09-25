@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS app_user (
     id              BIGSERIAL PRIMARY KEY,
     email           VARCHAR(200) NOT NULL UNIQUE,
-    password           VARCHAR(200) NOT NULL UNIQUE,
+    password        VARCHAR(200) NOT NULL,
     first_name      VARCHAR(100) NOT NULL,
     surname         VARCHAR(100) NOT NULL,
     created_at      TIMESTAMP NOT NULL,

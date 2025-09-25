@@ -9,6 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -26,10 +27,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     String password;
 
-    @Column(name = "first_name", unique = true, nullable = false)
+    @Column(name = "first_name", nullable = false)
     String firstname;
 
-    @Column(name = "surname", unique = true, nullable = false)
+    @Column(name = "surname", nullable = false)
     String surname;
 
     @CreationTimestamp

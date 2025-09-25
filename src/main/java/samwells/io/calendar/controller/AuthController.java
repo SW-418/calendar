@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import samwells.io.calendar.dto.SignupDto;
 import samwells.io.calendar.entity.User;
-import samwells.io.calendar.service.UserService;
+import samwells.io.calendar.service.UserServiceImpl;
 
 @RestController
 @RequestMapping("api/v1/auth")
 public class AuthController {
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserServiceImpl userService) {
         this.userService = userService;
     }
 
