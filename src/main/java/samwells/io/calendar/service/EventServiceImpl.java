@@ -1,21 +1,23 @@
 package samwells.io.calendar.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import samwells.io.calendar.entity.Event;
 import samwells.io.calendar.entity.User;
+import samwells.io.calendar.exception.InvalidDateTimeFormat;
 import samwells.io.calendar.exception.NotFoundException;
 import samwells.io.calendar.repository.EventRepository;
-import samwells.io.calendar.util.StringUtil;
 import samwells.io.calendar.util.TimeUtil;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -24,13 +26,12 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserService userService;
     private final TimeUtil timeUtil;
-    private final StringUtil stringUtil;
+    private final int PAGE_SIZE = 2;
 
-    public EventServiceImpl(EventRepository eventRepository, UserService userService, TimeUtil timeUtil, StringUtil stringUtil) {
+    public EventServiceImpl(EventRepository eventRepository, UserService userService, TimeUtil timeUtil) {
         this.eventRepository = eventRepository;
         this.userService = userService;
         this.timeUtil = timeUtil;
-        this.stringUtil = stringUtil;
     }
 
     @Override
@@ -60,17 +61,23 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<Event> getEvents(String startTime, String endTime) {
+    public List<Event> getEvents(String startTime, String endTime, String lastStartTime, Long lastId) {
         User currentUser = getUser();
-        if (stringUtil.isNullOrEmpty(startTime) && stringUtil.isNullOrEmpty(endTime)) return eventRepository.getEventsForUser(currentUser.getId());
 
-        Instant startTimeUtc = stringUtil.isNullOrEmpty(startTime) ? null : timeUtil.convertTimestamp(startTime);
-        Instant endTimeUtc = stringUtil.isNullOrEmpty(endTime) ? null : timeUtil.convertTimestamp(endTime);
+        // Only get future events if no start time provided
+        Instant sanitizedStartTimeUtc = Objects.requireNonNullElse(getSanitizedTimestamp(startTime), Instant.now());
+        Instant sanitizedEndTimeUtc = getSanitizedTimestamp(endTime);
+        Instant sanitizedLastStartTime = getSanitizedTimestamp(lastStartTime);
+        PageRequest pageRequest = PageRequest.ofSize(PAGE_SIZE);
 
-        if (startTimeUtc != null && endTime == null) return eventRepository.getEventsForUserStartingFromTime(currentUser.getId(), startTimeUtc);
-        if (startTimeUtc == null && endTime != null) return eventRepository.getEventsForUserEndingBeforeOrOnTime(currentUser.getId(), endTimeUtc);
-
-        return eventRepository.getEventsForUser(currentUser.getId(), startTimeUtc, endTimeUtc);
+        return eventRepository.getEventsForUser(
+                currentUser.getId(),
+                sanitizedStartTimeUtc,
+                sanitizedEndTimeUtc,
+                sanitizedLastStartTime,
+                lastId,
+                pageRequest
+        );
     }
 
     @Override
@@ -109,5 +116,13 @@ public class EventServiceImpl implements EventService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         return (User) auth.getPrincipal();
+    }
+
+    private Instant getSanitizedTimestamp(String timestamp) {
+        try {
+            return timeUtil.convertTimestamp(timestamp);
+        } catch (InvalidDateTimeFormat | NullPointerException ex) {
+            return null;
+        }
     }
 }

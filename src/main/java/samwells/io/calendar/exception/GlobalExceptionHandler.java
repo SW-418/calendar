@@ -14,7 +14,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorDto(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(value = { InvalidDateTimeFormat.class, InvalidTimezonePreferenceException.class })
+    @ExceptionHandler(value = { InvalidDateTimeFormat.class, InvalidTimezonePreferenceException.class, InvalidCursorException.class })
     public ResponseEntity<ErrorDto> handleInvalidDateTimeFormat(Exception ex) {
         return new ResponseEntity<>(new ErrorDto(ex.getMessage()), HttpStatus.BAD_REQUEST);
     }

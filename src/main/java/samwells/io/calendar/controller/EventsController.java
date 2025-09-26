@@ -5,11 +5,13 @@ import org.springframework.web.bind.annotation.*;
 import samwells.io.calendar.dto.CreateEventDto;
 import samwells.io.calendar.dto.EventDto;
 import samwells.io.calendar.dto.EventUpdateDto;
+import samwells.io.calendar.dto.PaginatedEventDto;
 import samwells.io.calendar.entity.Event;
+import samwells.io.calendar.exception.InvalidCursorException;
 import samwells.io.calendar.mapper.Mapper;
 import samwells.io.calendar.service.EventService;
+import samwells.io.calendar.util.StringUtil;
 
-import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -17,10 +19,12 @@ import java.util.List;
 public class EventsController {
     private final EventService eventService;
     private final Mapper<Event, EventDto> eventMapper;
+    private final StringUtil stringUtil;
 
-    public EventsController(EventService eventService, Mapper<Event, EventDto> eventMapper) {
+    public EventsController(EventService eventService, Mapper<Event, EventDto> eventMapper, StringUtil stringUtil) {
         this.eventService = eventService;
         this.eventMapper = eventMapper;
+        this.stringUtil = stringUtil;
     }
 
     @PostMapping
@@ -37,12 +41,26 @@ public class EventsController {
     }
 
     @GetMapping
-    List<EventDto> getEvents(@RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime) {
-        return eventService
-                .getEvents(startTime, endTime)
+    PaginatedEventDto getEvents(
+            @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) String lastStartTime,
+            @RequestParam(required = false) Long lastId
+    ) {
+        validatePaginationParams(lastStartTime, lastId);
+
+        List<EventDto> events = eventService
+                .getEvents(startTime, endTime, lastStartTime, lastId)
                 .stream()
                 .map(eventMapper::map)
                 .toList();
+
+        return new PaginatedEventDto(events);
+    }
+
+    private void validatePaginationParams(String lastStartTime, Long lastId) {
+        if (stringUtil.isNullOrEmpty(lastStartTime) && lastId != null) throw new InvalidCursorException("Both lastStartTime and lastId must be provided - Missing lastStartTime");
+        if (!stringUtil.isNullOrEmpty(lastStartTime) && lastId == null) throw new InvalidCursorException("Both lastStartTime and lastId must be provided - Missing lastId");
     }
 
     @GetMapping("/{id}")

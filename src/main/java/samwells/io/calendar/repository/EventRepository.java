@@ -1,5 +1,6 @@
 package samwells.io.calendar.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -11,17 +12,26 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
-    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p.id = :userId")
-    List<Event> getEventsForUser(@Param("userId") Long userId);
-
-    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p.id = :userId AND e.startTime >= :startTime")
-    List<Event> getEventsForUserStartingFromTime(@Param("userId") Long userId, @Param("startTime") Instant startTime);
-
-    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p.id = :userId AND e.endTime <= :endTime")
-    List<Event> getEventsForUserEndingBeforeOrOnTime(@Param("userId") Long userId, @Param("endTime") Instant endTime);
-
-    @Query("SELECT e FROM Event e JOIN e.participants p WHERE p.id = :userId AND e.startTime >= :startTime AND e.endTime <= :endTime")
-    List<Event> getEventsForUser(@Param("userId") Long userId, @Param("startTime") Instant startTime, @Param("endTime") Instant endTime);
+    @Query("""
+        SELECT e FROM Event e 
+        JOIN e.participants p 
+        WHERE p.id = :userId 
+        AND (:startTime IS NULL OR e.startTime >= :startTime) 
+        AND (:endTime IS NULL OR e.endTime <= :endTime) 
+        AND (
+            (:lastStartTime IS NULL AND :lastId IS NULL) OR 
+            ((e.startTime, e.id) > (:lastStartTime, :lastId))
+        )   
+        ORDER BY e.startTime ASC, e.id ASC
+    """)
+    List<Event> getEventsForUser(
+            @Param("userId") Long userId,
+            @Param("startTime") Instant startTime,
+            @Param("endTime") Instant endTime,
+            @Param("lastStartTime") Instant lastStartTime,
+            @Param("lastId") Long lastId,
+            Pageable pageable
+    );
 
     @Query("SELECT e FROM Event e JOIN e.participants p WHERE e.id = :eventId AND p.id = :userId")
     Optional<Event> getEventForUser(@Param("eventId") Long eventId, @Param("userId") Long userId);

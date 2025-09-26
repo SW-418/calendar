@@ -14,7 +14,7 @@ public interface EventService {
             ChronoUnit durationUnit,
             Set<Long> participants
     );
-    List<Event> getEvents(String startTime, String endTime);
+    List<Event> getEvents(String startTime, String endTime, String lastStartTime, Long lastId);
     Event getEvent(Long eventId);
     void deleteEvent(Long eventId);
     Event updateEvent(
