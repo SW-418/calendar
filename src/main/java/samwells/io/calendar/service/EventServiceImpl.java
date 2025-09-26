@@ -76,6 +76,24 @@ public class EventServiceImpl implements EventService {
         if (affectedRows == 0) throw new NotFoundException(eventId);
     }
 
+    @Override
+    @Transactional
+    public Event updateEvent(Long eventId, String title, String startTime, Integer duration, ChronoUnit durationUnit) {
+        // Gets event for current user
+        Event event = getEvent(eventId);
+
+        if (title != null && !title.isBlank()) event.setTitle(title);
+        if (startTime != null && !startTime.isBlank()) event.setStartTime(convertTimestamp(startTime));
+        if (duration != null) event.setDuration(duration);
+        if (durationUnit != null) event.setDurationUnit(durationUnit);
+
+        event.setEndTime(event.getStartTime().plus(event.getDuration(), event.getDurationUnit()));
+
+        eventRepository.save(event);
+
+        return event;
+    }
+
     private User getUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 

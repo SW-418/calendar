@@ -17,4 +17,11 @@ public interface EventService {
     List<Event> getEvents();
     Event getEvent(Long eventId);
     void deleteEvent(Long eventId);
+    Event updateEvent(
+            Long eventId,
+            String title,
+            String startTime,
+            Integer duration,
+            ChronoUnit durationUnit
+    );
 }
