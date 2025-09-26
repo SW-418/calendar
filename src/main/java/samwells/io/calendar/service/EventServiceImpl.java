@@ -7,34 +7,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import samwells.io.calendar.entity.Event;
 import samwells.io.calendar.entity.User;
-import samwells.io.calendar.exception.InvalidDateTimeFormat;
 import samwells.io.calendar.exception.NotFoundException;
 import samwells.io.calendar.repository.EventRepository;
+import samwells.io.calendar.util.StringUtil;
+import samwells.io.calendar.util.TimeUtil;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Service
 @Slf4j
+@Service
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserService userService;
+    private final TimeUtil timeUtil;
+    private final StringUtil stringUtil;
 
-    public EventServiceImpl(EventRepository eventRepository, UserService userService) {
+    public EventServiceImpl(EventRepository eventRepository, UserService userService, TimeUtil timeUtil, StringUtil stringUtil) {
         this.eventRepository = eventRepository;
         this.userService = userService;
+        this.timeUtil = timeUtil;
+        this.stringUtil = stringUtil;
     }
 
     @Override
     @Transactional
     public Event createEvent(String title, String startTime, int duration, ChronoUnit durationUnit, Set<Long> participants) {
         // Validate and create UTC start + end times
-        Instant utcStart = convertTimestamp(startTime);
+        Instant utcStart = timeUtil.convertTimestamp(startTime);
         Instant utcEnd = utcStart.plus(duration, durationUnit);
 
         User currentUser = getUser();
@@ -57,9 +60,17 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<Event> getEvents() {
+    public List<Event> getEvents(String startTime, String endTime) {
         User currentUser = getUser();
-        return eventRepository.getEventsForUser(currentUser.getId());
+        if (stringUtil.isNullOrEmpty(startTime) && stringUtil.isNullOrEmpty(endTime)) return eventRepository.getEventsForUser(currentUser.getId());
+
+        Instant startTimeUtc = stringUtil.isNullOrEmpty(startTime) ? null : timeUtil.convertTimestamp(startTime);
+        Instant endTimeUtc = stringUtil.isNullOrEmpty(endTime) ? null : timeUtil.convertTimestamp(endTime);
+
+        if (startTimeUtc != null && endTime == null) return eventRepository.getEventsForUserStartingFromTime(currentUser.getId(), startTimeUtc);
+        if (startTimeUtc == null && endTime != null) return eventRepository.getEventsForUserEndingBeforeOrOnTime(currentUser.getId(), endTimeUtc);
+
+        return eventRepository.getEventsForUser(currentUser.getId(), startTimeUtc, endTimeUtc);
     }
 
     @Override
@@ -83,7 +94,7 @@ public class EventServiceImpl implements EventService {
         Event event = getEvent(eventId);
 
         if (title != null && !title.isBlank()) event.setTitle(title);
-        if (startTime != null && !startTime.isBlank()) event.setStartTime(convertTimestamp(startTime));
+        if (startTime != null && !startTime.isBlank()) event.setStartTime(timeUtil.convertTimestamp(startTime));
         if (duration != null) event.setDuration(duration);
         if (durationUnit != null) event.setDurationUnit(durationUnit);
 
@@ -98,22 +109,5 @@ public class EventServiceImpl implements EventService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         return (User) auth.getPrincipal();
-    }
-
-    // TODO: Single responsibility refactor
-    private Instant convertTimestamp(String timestamp) {
-        try {
-            return Instant.parse(timestamp);
-        } catch (DateTimeParseException exception) {
-            log.warn("Couldn't parse timestamp directly to UTC - {}", timestamp);
-        }
-
-        try {
-            return ZonedDateTime.parse(timestamp).toInstant();
-        } catch (DateTimeParseException exception) {
-            log.warn("Couldn't parse timestamp to UTC using zoning - {}", timestamp);
-        }
-
-        throw new InvalidDateTimeFormat();
     }
 }

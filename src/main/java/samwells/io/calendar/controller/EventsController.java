@@ -9,6 +9,7 @@ import samwells.io.calendar.entity.Event;
 import samwells.io.calendar.mapper.Mapper;
 import samwells.io.calendar.service.EventService;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -36,8 +37,12 @@ public class EventsController {
     }
 
     @GetMapping
-    List<EventDto> getEvents() {
-        return eventService.getEvents().stream().map(eventMapper::map).toList();
+    List<EventDto> getEvents(@RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime) {
+        return eventService
+                .getEvents(startTime, endTime)
+                .stream()
+                .map(eventMapper::map)
+                .toList();
     }
 
     @GetMapping("/{id}")
@@ -60,7 +65,7 @@ public class EventsController {
                 eventUpdateDto.duration(),
                 eventUpdateDto.durationUnit()
         );
-        
+
         return eventMapper.map(updatedEvent);
     }
 }
