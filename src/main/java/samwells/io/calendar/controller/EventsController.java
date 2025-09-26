@@ -1,9 +1,11 @@
 package samwells.io.calendar.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import samwells.io.calendar.dto.CreateEventDto;
 import samwells.io.calendar.dto.EventDto;
 import samwells.io.calendar.entity.Event;
+import samwells.io.calendar.mapper.Mapper;
 import samwells.io.calendar.service.EventService;
 
 import java.util.List;
@@ -12,9 +14,11 @@ import java.util.List;
 @RequestMapping("/api/v1/events")
 public class EventsController {
     private final EventService eventService;
+    private final Mapper<Event, EventDto> eventMapper;
 
-    public EventsController(EventService eventService) {
+    public EventsController(EventService eventService, Mapper<Event, EventDto> eventMapper) {
         this.eventService = eventService;
+        this.eventMapper = eventMapper;
     }
 
     @PostMapping
@@ -32,11 +36,17 @@ public class EventsController {
 
     @GetMapping
     List<EventDto> getEvents() {
-        return eventService.getEvents().stream().map(EventDto::new).toList();
+        return eventService.getEvents().stream().map(eventMapper::map).toList();
     }
 
     @GetMapping("/{id}")
     EventDto getEvent(@PathVariable Long id) {
-        return new EventDto(eventService.getEvent(id));
+        return eventMapper.map(eventService.getEvent(id));
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+        eventService.deleteEvent(id);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS app_user (
     password        VARCHAR(200) NOT NULL,
     first_name      VARCHAR(100) NOT NULL,
     surname         VARCHAR(100) NOT NULL,
+    tz_preference   VARCHAR(50),
     created_at      TIMESTAMP NOT NULL,
     updated_at      TIMESTAMP NOT NULL,
     version         BIGINT NOT NULL

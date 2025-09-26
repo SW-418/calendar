@@ -20,7 +20,12 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(@RequestBody SignupDto signupDto) {
-        userService.createUser(new User(signupDto.email(), signupDto.password(), signupDto.firstname(), signupDto.surname()));
+        String timezonePreference = signupDto.timezonePreference();
+
+        User user = new User(signupDto.email(), signupDto.password(), signupDto.firstname(), signupDto.surname());
+        if (timezonePreference != null) user.setTimezonePreference(timezonePreference);
+
+        userService.createUser(user);
 
         return ResponseEntity.ok().build();
     }

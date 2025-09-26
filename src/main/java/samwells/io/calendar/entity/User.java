@@ -7,8 +7,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import samwells.io.calendar.exception.InvalidTimezonePreferenceException;
 
+import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.zone.ZoneRulesException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,6 +37,9 @@ public class User implements UserDetails {
     @Column(name = "surname", nullable = false)
     String surname;
 
+    @Column(name = "timezone_preference")
+    String timezonePreference;
+
     @CreationTimestamp
     @Column(name = "created_at")
     Instant createdAt;
@@ -50,6 +57,14 @@ public class User implements UserDetails {
         this.password = password;
         this.firstname = firstname;
         this.surname = surname;
+    }
+
+    public User(String email, String password, String firstname, String surname, String timezonePreference) {
+        this.email = email;
+        this.password = password;
+        this.firstname = firstname;
+        this.surname = surname;
+        setTimezonePreference(timezonePreference);
     }
 
     @Override
@@ -80,5 +95,13 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
+    }
+
+    public void setTimezonePreference(String timezonePreference) {
+        try {
+            this.timezonePreference = ZoneId.of(timezonePreference).getId();
+        } catch (DateTimeException exception) {
+            throw new InvalidTimezonePreferenceException(timezonePreference);
+        }
     }
 }

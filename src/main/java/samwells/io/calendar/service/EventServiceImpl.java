@@ -1,6 +1,5 @@
 package samwells.io.calendar.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,7 +9,6 @@ import samwells.io.calendar.entity.Event;
 import samwells.io.calendar.entity.User;
 import samwells.io.calendar.exception.InvalidDateTimeFormat;
 import samwells.io.calendar.exception.NotFoundException;
-import samwells.io.calendar.exception.UnauthorizedException;
 import samwells.io.calendar.repository.EventRepository;
 
 import java.time.Instant;
@@ -66,14 +64,16 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public Event getEvent(Long eventId) {
-        User user = getUser();
-        try {
-            Event event = eventRepository.getReferenceById(eventId);
-            if (!user.getId().equals(event.getOwner().getId())) throw new UnauthorizedException(eventId);
-            return event;
-        } catch (EntityNotFoundException exception) {
-            throw new NotFoundException(eventId);
-        }
+        return eventRepository
+                .getEventForUser(eventId, getUser().getId())
+                .orElseThrow(() -> new NotFoundException(eventId));
+    }
+
+    @Override
+    @Transactional
+    public void deleteEvent(Long eventId) {
+        int affectedRows = eventRepository.deleteEventForUser(eventId, getUser().getId());
+        if (affectedRows == 0) throw new NotFoundException(eventId);
     }
 
     private User getUser() {
